@@ -463,75 +463,58 @@ def generate_stack_overflow_links(code_content: str, language: str = "general", 
             'tags': f'{language},unit-testing,best-practices,testing'
         },
         'input-validation-missing': {
-            'title': 'best-practices-for-input-validation-in-python',
-            'tags': f'{language},input-validation,security,validation'
+            # Option 1: Direct question (if you know a good one)
+            'url': 'https://stackoverflow.com/questions/231767/what-are-the-best-practices-for-validating-user-input-in-python',
+            # Option 2: Targeted search
+            'search': 'https://stackoverflow.com/search?q=[python]+input+validation+security+validation'
         },
         # ... keep all previous mappings ...
     }
     
-    def create_realistic_so_url(pattern: str, language: str, question_id: int) -> str:
-        mapping = pattern_mappings.get(pattern, {
-            'title': f'best-practices-for-{pattern.replace("-", "-")}',
-            'tags': f'{language},best-practices,code-quality'
-        })
-        title = mapping['title']
-        tags = mapping['tags']
-        return f"https://stackoverflow.com/questions/{question_id}/{title}?tab=votes#tab-top"
+    def get_so_link_for_pattern(pattern: str) -> str:
+        mapping = pattern_mappings.get(pattern)
+        if mapping:
+            if 'url' in mapping:
+                return mapping['url']
+            elif 'search' in mapping:
+                return mapping['search']
+            elif 'title' in mapping and 'tags' in mapping:
+                return f"https://stackoverflow.com/search?q=[{mapping['tags'].replace(',', ']+[')}]+{mapping['title'].replace('-', '+')}"
+        # fallback
+        return f"https://stackoverflow.com/search?q={pattern.replace('-', '+')}+{language}"
     
     # Priority 1: Very specific patterns (most relevant)
-    for i, specific_pattern in enumerate(extracted_patterns['specific_patterns'][:3]):
-        question_id = 40000 + i * 1000
-        links.append(create_realistic_so_url(specific_pattern, language, question_id))
+    for specific_pattern in extracted_patterns['specific_patterns'][:3]:
+        links.append(get_so_link_for_pattern(specific_pattern))
     
     # Priority 2: Security issues (if not already covered by specific patterns)
     for security_issue in extracted_patterns['security_issues'][:1]:
         if not any(security_issue in link for link in links):
-            question_id = 50000 + len(links) * 1000
-            links.append(create_realistic_so_url(security_issue, language, question_id))
+            links.append(get_so_link_for_pattern(security_issue))
     
     # Priority 3: Performance issues (if not already covered)
     for perf_issue in extracted_patterns['performance_issues'][:1]:
         if not any(perf_issue in link for link in links):
-            question_id = 60000 + len(links) * 1000
-            links.append(create_realistic_so_url(perf_issue, language, question_id))
+            links.append(get_so_link_for_pattern(perf_issue))
     
     # Priority 4: Framework-specific patterns (if not already covered)
     for framework_pattern in extracted_patterns['framework_specific'][:1]:
         if not any(framework_pattern in link for link in links):
-            question_id = 70000 + len(links) * 1000
-            links.append(create_realistic_so_url(framework_pattern, language, question_id))
+            links.append(get_so_link_for_pattern(framework_pattern))
     
     # Priority 5: Code quality issues (if not already covered)
     for quality_issue in extracted_patterns['code_quality'][:1]:
         if not any(quality_issue in link for link in links):
-            question_id = 80000 + len(links) * 1000
-            links.append(create_realistic_so_url(quality_issue, language, question_id))
+            links.append(get_so_link_for_pattern(quality_issue))
     
     # Priority 6: Testing issues (if not already covered)
     for testing_issue in extracted_patterns['testing_issues'][:1]:
         if not any(testing_issue in link for link in links):
-            question_id = 90000 + len(links) * 1000
-            links.append(create_realistic_so_url(testing_issue, language, question_id))
+            links.append(get_so_link_for_pattern(testing_issue))
     
-    # If we still don't have enough links, add language-specific best practices for 'best_practice' findings
-    if len(links) < 4 and (finding_type == 'best_practice' or (finding_title and 'best practice' in finding_title.lower())):
-        question_id = 100000 + len(links) * 1000
-        # Use the finding title/description to generate a more specific best practice link
-        if finding_title:
-            title_slug = finding_title.lower().replace(' ', '-').replace('.', '').replace(',', '').replace('/', '-')
-            links.append(f"https://stackoverflow.com/questions/{question_id}/best-practices-for-{title_slug}?tab=votes#tab-top")
-        elif finding_description:
-            desc_slug = finding_description.lower().split('.')[0].replace(' ', '-').replace('.', '').replace(',', '').replace('/', '-')
-            links.append(f"https://stackoverflow.com/questions/{question_id}/best-practices-for-{desc_slug}?tab=votes#tab-top")
-        else:
-            links.append(create_realistic_so_url(f'{language}-best-practices', language, question_id))
-    
-    # Ensure we have exactly 4 links
-    while len(links) < 4:
-        question_id = 110000 + len(links) * 1000
-        links.append(create_realistic_so_url(f'{language}-best-practices', language, question_id))
-    
-    return links[:4]
+    # Remove duplicates and empty links
+    links = [link for i, link in enumerate(links) if link and link not in links[:i]]
+    return links
 
 # API Endpoints
 @app.get("/")
