@@ -410,6 +410,11 @@ def extract_code_patterns(diff_content: str) -> Dict[str, List[str]]:
         if 'mock' in line_lower and 'verify' not in line_lower:
             patterns['testing_issues'].append('mock-without-verification')
             patterns['specific_patterns'].append('mock-without-verification')
+        
+        # Detect missing input validation in Python
+        if 'input' in line_lower and 'validate' not in line_lower:
+            patterns['security_issues'].append('input-validation-missing')
+            patterns['specific_patterns'].append('input-validation-missing')
     
     # Remove duplicates
     for category in patterns:
@@ -456,6 +461,10 @@ def generate_stack_overflow_links(code_content: str, language: str = "general", 
         'missing-unit-tests': {
             'title': 'why-are-unit-tests-important-and-how-to-write-them',
             'tags': f'{language},unit-testing,best-practices,testing'
+        },
+        'input-validation-missing': {
+            'title': 'best-practices-for-input-validation-in-python',
+            'tags': f'{language},input-validation,security,validation'
         },
         # ... keep all previous mappings ...
     }
