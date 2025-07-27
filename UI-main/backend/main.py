@@ -514,6 +514,16 @@ def generate_stack_overflow_links(code_content: str, language: str = "general", 
     
     # Remove duplicates and empty links
     links = [link for i, link in enumerate(links) if link and link not in links[:i]]
+
+    # If no relevant links found, use the risk finding's title or description for a targeted Stack Overflow search
+    if not links:
+        if finding_title:
+            title_slug = finding_title.lower().replace(' ', '+').replace('.', '').replace(',', '').replace('/', '+')
+            links.append(f"https://stackoverflow.com/search?q={title_slug}+{language}")
+        elif finding_description:
+            desc_slug = finding_description.lower().split('.')[0].replace(' ', '+').replace('.', '').replace(',', '').replace('/', '+')
+            links.append(f"https://stackoverflow.com/search?q={desc_slug}+{language}")
+
     return links
 
 # API Endpoints
