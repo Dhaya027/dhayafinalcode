@@ -190,10 +190,43 @@ export interface StackOverflowRiskResponse {
     description: string;
     stack_overflow_links: string[];
     recommendations: string[];
+    stack_overflow_deprecation?: Array<{
+      title: string;
+      link: string;
+      score: number;
+      answer_count: number;
+    }>;
+    stack_overflow_security?: Array<{
+      title: string;
+      link: string;
+      score: number;
+      answer_count: number;
+    }>;
+    stack_overflow_performance?: Array<{
+      title: string;
+      link: string;
+      score: number;
+      answer_count: number;
+    }>;
+    stack_overflow_best_practices?: Array<{
+      title: string;
+      link: string;
+      score: number;
+      answer_count: number;
+    }>;
   }>;
   overall_risk_score: number;
   risk_summary: string;
   alternative_approaches: string[];
+  stack_overflow_insights?: Array<{
+    title: string;
+    link: string;
+    score: number;
+    answer_count: number;
+  }>;
+  deprecation_warnings?: string[];
+  security_issues?: string[];
+  performance_issues?: string[];
 }
 
 class ApiService {

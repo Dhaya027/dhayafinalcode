@@ -25,6 +25,162 @@ import difflib
 import base64
 import ast
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from io import BytesIO
+import base64
+from PIL import Image
+import numpy as np
+from wordcloud import WordCloud
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "png"
+
+# Stack Overflow API Configuration
+STACK_OVERFLOW_API_KEY = "rl_osx8Z3mYVaKqatJKhnXcLUfgD"
+STACK_OVERFLOW_API_BASE_URL = "https://api.stackexchange.com/2.3"
+
+async def query_stack_overflow_api(query: str, tags: List[str] = None, max_results: int = 5) -> List[Dict]:
+    """
+    Query Stack Overflow API for questions related to deprecation warnings, best practices, and code issues.
+    
+    Args:
+        query: Search query string
+        tags: List of tags to filter by
+        max_results: Maximum number of results to return
+    
+    Returns:
+        List of Stack Overflow questions with relevant information
+    """
+    try:
+        # Build the API URL
+        url = f"{STACK_OVERFLOW_API_BASE_URL}/search/advanced"
+        
+        # Prepare parameters
+        params = {
+            'site': 'stackoverflow',
+            'q': query,
+            'sort': 'votes',
+            'order': 'desc',
+            'pagesize': max_results,
+            'key': STACK_OVERFLOW_API_KEY,
+            'filter': 'withbody'  # Include question body
+        }
+        
+        # Add tags if provided
+        if tags:
+            params['tagged'] = ';'.join(tags)
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get('items', [])
+                else:
+                    print(f"Stack Overflow API error: {response.status}")
+                    return []
+                    
+    except Exception as e:
+        print(f"Error querying Stack Overflow API: {str(e)}")
+        return []
+
+def extract_deprecation_keywords(code_content: str, language: str) -> List[str]:
+    """
+    Extract potential deprecation keywords and patterns from code content.
+    
+    Args:
+        code_content: The code content to analyze
+        language: Programming language
+    
+    Returns:
+        List of potential deprecation keywords
+    """
+    keywords = []
+    
+    # Language-specific deprecation patterns
+    deprecation_patterns = {
+        'python': [
+            'import math', 'math.log', 'print', 'raw_input', 'xrange', 'reduce',
+            'cmp', 'apply', 'buffer', 'coerce', 'execfile', 'file', 'long',
+            'reload', 'unicode', 'basestring', 'unichr'
+        ],
+        'javascript': [
+            'var', 'function', 'eval', 'with', 'arguments.callee', 'arguments.caller',
+            'document.write', 'innerHTML', 'setTimeout', 'setInterval'
+        ],
+        'java': [
+            'Vector', 'Hashtable', 'Enumeration', 'StringBuffer', 'Date',
+            'Calendar', 'SimpleDateFormat', 'Thread.stop', 'Thread.suspend'
+        ]
+    }
+    
+    # Check for deprecation patterns
+    patterns = deprecation_patterns.get(language, [])
+    for pattern in patterns:
+        if pattern in code_content:
+            keywords.append(pattern)
+    
+    # Check for common deprecation indicators
+    deprecation_indicators = [
+        'deprecated', 'deprecation', 'obsolete', 'legacy', 'old', 'outdated',
+        'removed', 'discontinued', 'superseded', 'replaced'
+    ]
+    
+    for indicator in deprecation_indicators:
+        if indicator in code_content.lower():
+            keywords.append(indicator)
+    
+    return keywords
+
+def analyze_code_risks(code_content: str, language: str) -> Dict[str, Any]:
+    """
+    Analyze code content for potential risks and issues.
+    
+    Args:
+        code_content: The code content to analyze
+        language: Programming language
+    
+    Returns:
+        Dictionary containing risk analysis results
+    """
+    risks = {
+        'deprecation_warnings': [],
+        'security_issues': [],
+        'performance_issues': [],
+        'best_practices': [],
+        'code_smells': []
+    }
+    
+    # Check for deprecated patterns
+    deprecation_keywords = extract_deprecation_keywords(code_content, language)
+    if deprecation_keywords:
+        risks['deprecation_warnings'] = deprecation_keywords
+    
+    # Check for security issues
+    security_patterns = [
+        'eval(', 'exec(', 'input()', 'raw_input()', 'os.system(',
+        'subprocess.call(', 'subprocess.Popen(', 'pickle.loads('
+    ]
+    
+    for pattern in security_patterns:
+        if pattern in code_content:
+            risks['security_issues'].append(pattern)
+    
+    # Check for performance issues
+    performance_patterns = {
+        'python': ['for i in range(len(', 'list.append(', 'string += '],
+        'javascript': ['for (var i = 0; i < array.length; i++)', 'innerHTML += '],
+        'java': ['String += ', 'Vector', 'Hashtable']
+    }
+    
+    patterns = performance_patterns.get(language, [])
+    for pattern in patterns:
+        if pattern in code_content:
+            risks['performance_issues'].append(pattern)
+    
+    return risks
 
 # Load environment variables
 load_dotenv()
@@ -1346,6 +1502,89 @@ async def stack_overflow_risk_checker(request: StackOverflowRiskRequest, req: Re
             # Generate dynamic alternative approaches
             if not risk_data["alternative_approaches"] or len(risk_data["alternative_approaches"]) < 2:
                 risk_data["alternative_approaches"] = generate_dynamic_alternatives(safe_diff, detected_language)
+            
+            # Enhanced Stack Overflow API Integration
+            print("Enhancing risk analysis with Stack Overflow API...")
+            
+            # Analyze code risks for deprecation warnings and best practices
+            code_risks = analyze_code_risks(safe_diff, detected_language)
+            
+            # Query Stack Overflow API for each risk finding
+            enhanced_findings = []
+            for finding in risk_data["risk_findings"]:
+                enhanced_finding = finding.copy()
+                
+                # Query Stack Overflow API for deprecation warnings
+                if code_risks['deprecation_warnings']:
+                    deprecation_query = f"{' '.join(code_risks['deprecation_warnings'])} {detected_language} deprecated"
+                    deprecation_results = await query_stack_overflow_api(
+                        query=deprecation_query,
+                        tags=[detected_language, 'deprecation'],
+                        max_results=3
+                    )
+                    if deprecation_results:
+                        enhanced_finding['stack_overflow_deprecation'] = deprecation_results
+                
+                # Query Stack Overflow API for security issues
+                if code_risks['security_issues']:
+                    security_query = f"{' '.join(code_risks['security_issues'])} {detected_language} security"
+                    security_results = await query_stack_overflow_api(
+                        query=security_query,
+                        tags=[detected_language, 'security'],
+                        max_results=3
+                    )
+                    if security_results:
+                        enhanced_finding['stack_overflow_security'] = security_results
+                
+                # Query Stack Overflow API for performance issues
+                if code_risks['performance_issues']:
+                    performance_query = f"{' '.join(code_risks['performance_issues'])} {detected_language} performance"
+                    performance_results = await query_stack_overflow_api(
+                        query=performance_query,
+                        tags=[detected_language, 'performance'],
+                        max_results=3
+                    )
+                    if performance_results:
+                        enhanced_finding['stack_overflow_performance'] = performance_results
+                
+                # Query Stack Overflow API for best practices
+                best_practice_query = f"{finding.get('title', '')} {finding.get('description', '')} {detected_language} best practices"
+                best_practice_results = await query_stack_overflow_api(
+                    query=best_practice_query,
+                    tags=[detected_language, 'best-practices'],
+                    max_results=3
+                )
+                if best_practice_results:
+                    enhanced_finding['stack_overflow_best_practices'] = best_practice_results
+                
+                enhanced_findings.append(enhanced_finding)
+            
+            # Update risk data with enhanced findings
+            risk_data["risk_findings"] = enhanced_findings
+            
+            # Add overall Stack Overflow insights
+            overall_query = f"{detected_language} code review best practices"
+            overall_results = await query_stack_overflow_api(
+                query=overall_query,
+                tags=[detected_language, 'code-review'],
+                max_results=2
+            )
+            if overall_results:
+                risk_data["stack_overflow_insights"] = overall_results
+            
+            # Add deprecation warnings summary
+            if code_risks['deprecation_warnings']:
+                risk_data["deprecation_warnings"] = code_risks['deprecation_warnings']
+            
+            # Add security issues summary
+            if code_risks['security_issues']:
+                risk_data["security_issues"] = code_risks['security_issues']
+            
+            # Add performance issues summary
+            if code_risks['performance_issues']:
+                risk_data["performance_issues"] = code_risks['performance_issues']
+            
+            print(f"Enhanced risk analysis with {len(enhanced_findings)} findings and Stack Overflow API data")
             
             return risk_data
             
