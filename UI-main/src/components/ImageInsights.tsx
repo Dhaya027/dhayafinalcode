@@ -380,10 +380,19 @@ The excel file analysis reveals specific data patterns and visual elements that 
       else if (currentChartType === 'pie') chartTypeString = 'Pie'; // Ensure Pie is mapped for Excel
       else if (currentChartType === 'stacked') chartTypeString = 'Stacked Bar';
 
+      console.log('Creating chart with:', {
+        itemId,
+        currentChartType,
+        chartTypeString,
+        analysisType,
+        spaceKey
+      });
+
       let response;
       if (analysisType === 'image') {
         const image = images.find(img => img.id === itemId);
         if (!image || !image.pageTitle) throw new Error('Image not found or missing page title');
+        console.log('Creating chart from image:', image.name);
         response = await apiService.createChart({
           space_key: spaceKey,
           page_title: image.pageTitle,
@@ -412,9 +421,22 @@ The excel file analysis reveals specific data patterns and visual elements that 
       } else {
         const excel = excelFiles.find(f => f.id === itemId);
         if (!excel || !excel.pageTitle) throw new Error('Excel file not found or missing page title');
+        console.log('Creating chart from Excel:', excel.name, 'Chart type:', chartTypeString);
+        
         // Ensure Pie chart type is sent as 'Pie' for Excel
         let excelChartTypeString = chartTypeString;
         if (currentChartType === 'pie') excelChartTypeString = 'Pie';
+        if (currentChartType === 'stacked') excelChartTypeString = 'Stacked Bar';
+        
+        console.log('Sending Excel chart request:', {
+          space_key: spaceKey,
+          page_title: excel.pageTitle,
+          excel_url: excel.url,
+          chart_type: excelChartTypeString,
+          filename: chartFileName || 'chart',
+          format: currentExportFormat
+        });
+        
         response = await apiService.createChartFromExcel({
           space_key: spaceKey,
           page_title: excel.pageTitle,
@@ -423,6 +445,9 @@ The excel file analysis reveals specific data patterns and visual elements that 
           filename: chartFileName || 'chart',
           format: currentExportFormat
         });
+        
+        console.log('Chart response received:', response);
+        
         const binaryString = atob(response.chart_data);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -451,6 +476,8 @@ The excel file analysis reveals specific data patterns and visual elements that 
       }, 100);
     } catch (error) {
       console.error('Failed to create chart:', error);
+      // Show user-friendly error message
+      alert(`Failed to create chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsCreatingChart(false);
     }
