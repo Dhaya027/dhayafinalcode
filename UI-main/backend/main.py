@@ -1916,23 +1916,52 @@ async def create_chart_from_excel(request: ChartFromExcelRequest, req: Request):
         df = pd.read_excel(BytesIO(excel_bytes))
 
         plt.figure(figsize=(10, 6))
-        
-        if request.chart_type == "Grouped Bar":
-            df.plot(kind='bar', ax=plt.gca())
-        elif request.chart_type == "Line":
-            df.plot(kind='line', ax=plt.gca())
-        elif request.chart_type == "Pie":
-            df.iloc[0].plot(kind='pie', autopct='%1.1f%%', ax=plt.gca())
-        elif request.chart_type == "Stacked Bar":
-            df.plot(kind='bar', stacked=True, ax=plt.gca())
+        chart_type = request.chart_type
 
-        plt.title(f"{request.chart_type} Chart")
+        # Robust chart handling
+        if chart_type == "Grouped Bar":
+            # Try to plot all columns as grouped bars
+            if df.shape[1] < 2:
+                raise HTTPException(status_code=400, detail="Grouped Bar chart requires at least two columns of data.")
+            df.plot(kind='bar', ax=plt.gca())
+        elif chart_type == "Line":
+            if df.shape[1] < 2:
+                raise HTTPException(status_code=400, detail="Line chart requires at least two columns of data.")
+            df.plot(kind='line', ax=plt.gca())
+        elif chart_type == "Pie":
+            # Pie chart: try to use first column as labels, second as values
+            if df.shape[1] >= 2:
+                labels = df.iloc[:, 0]
+                values = df.iloc[:, 1]
+                plt.pie(values, labels=labels, autopct='%1.1f%%')
+            elif df.shape[0] == 1 and df.shape[1] > 0:
+                # Single row, use columns as labels
+                values = df.iloc[0]
+                labels = df.columns
+                plt.pie(values, labels=labels, autopct='%1.1f%%')
+            else:
+                raise HTTPException(status_code=400, detail="Pie chart requires at least two columns or a single row of data.")
+        elif chart_type == "Stacked Bar":
+            # Stacked bar: needs at least two columns of numeric data
+            numeric_df = df.select_dtypes(include='number')
+            if numeric_df.shape[1] < 2:
+                # Try transposing if more rows than columns
+                if df.shape[0] > 1 and df.shape[1] == 1:
+                    numeric_df = df.transpose()
+                if numeric_df.shape[1] < 2:
+                    raise HTTPException(status_code=400, detail="Stacked Bar chart requires at least two columns of numeric data.")
+            numeric_df.plot(kind='bar', stacked=True, ax=plt.gca())
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported chart type: {chart_type}")
+
+        plt.title(f"{chart_type} Chart")
         plt.tight_layout()
         
         buf = BytesIO()
         plt.savefig(buf, format='png')
         buf.seek(0)
         chart_data = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
         
         return {
             "chart_data": chart_data,
