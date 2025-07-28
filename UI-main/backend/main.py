@@ -1851,13 +1851,23 @@ async def create_chart(request: ChartRequest, req: Request):
             plt.title("Grouped Bar Chart")
             plt.tight_layout()
         elif request.chart_type == "Stacked Bar":
-            df_plot = df.set_index(df.columns[0])
-            plt.figure(figsize=(10, 6))
-            df_plot.drop(columns="Total", errors="ignore").plot(kind='bar', stacked=True)
-            plt.title("Stacked Bar Chart")
-            plt.xticks(rotation=45)
-            plt.ylabel("Count")
-            plt.tight_layout()
+            # Stacked bar: use first column as x-axis if non-numeric, rest as numeric data
+            if df.shape[1] < 2:
+                raise HTTPException(status_code=400, detail="Stacked Bar chart requires at least two columns of data.")
+            first_col = df.columns[0]
+            if not pd.api.types.is_numeric_dtype(df[first_col]):
+                # Use first column as x-axis, rest as numeric data
+                numeric_cols = [col for col in df.columns[1:] if pd.api.types.is_numeric_dtype(df[col])]
+                if len(numeric_cols) < 1:
+                    raise HTTPException(status_code=400, detail="Stacked Bar chart requires at least one numeric column in addition to the label column.")
+                df_plot = df[[first_col] + numeric_cols].set_index(first_col)
+                df_plot.plot(kind='bar', stacked=True, ax=plt.gca())
+            else:
+                # All columns numeric, plot as before
+                numeric_df = df.select_dtypes(include='number')
+                if numeric_df.shape[1] < 2:
+                    raise HTTPException(status_code=400, detail="Stacked Bar chart requires at least two columns of numeric data.")
+                numeric_df.plot(kind='bar', stacked=True, ax=plt.gca())
         elif request.chart_type == "Line":
             df_plot = df.set_index(df.columns[0])
             plt.figure(figsize=(10, 6))
