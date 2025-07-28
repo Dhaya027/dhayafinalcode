@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, GitCompare, AlertTriangle, CheckCircle, X, ChevronDown, Loader2, Download, Save, MessageSquare, Search, Video, Code, TestTube, Image, ExternalLink, Shield, Zap, BookOpen } from 'lucide-react';
+import { TrendingUp, GitCompare, AlertTriangle, CheckCircle, X, ChevronDown, Loader2, Download, Save, MessageSquare, Search, Video, Code, TestTube, Image, ExternalLink, Shield, Zap } from 'lucide-react';
 import { FeatureType } from '../App';
 import { apiService, Space, StackOverflowRiskRequest, StackOverflowRiskResponse } from '../services/api';
 import { getConfluenceSpaceAndPageFromUrl } from '../utils/urlUtils';
@@ -618,91 +618,6 @@ ${qaResults.map(qa => `**Q:** ${qa.question}\n**A:** ${qa.answer}`).join('\n\n')
                                 </div>
                               </div>
                             )}
-
-                            {/* Enhanced Stack Overflow API Data */}
-                            {/* Deprecation Warnings */}
-                            {finding.stack_overflow_deprecation && finding.stack_overflow_deprecation.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs font-medium text-orange-600 mb-1">⚠️ Deprecation Warnings:</p>
-                                <div className="space-y-1">
-                                  {finding.stack_overflow_deprecation.map((item: any, itemIndex: number) => (
-                                    <a
-                                      key={itemIndex}
-                                      href={item.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center space-x-1 text-xs text-orange-600 hover:text-orange-800"
-                                    >
-                                      <ExternalLink className="w-3 h-3" />
-                                      <span>{item.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Security Issues */}
-                            {finding.stack_overflow_security && finding.stack_overflow_security.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs font-medium text-red-600 mb-1">🔒 Security Issues:</p>
-                                <div className="space-y-1">
-                                  {finding.stack_overflow_security.map((item: any, itemIndex: number) => (
-                                    <a
-                                      key={itemIndex}
-                                      href={item.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center space-x-1 text-xs text-red-600 hover:text-red-800"
-                                    >
-                                      <ExternalLink className="w-3 h-3" />
-                                      <span>{item.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Performance Issues */}
-                            {finding.stack_overflow_performance && finding.stack_overflow_performance.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs font-medium text-yellow-600 mb-1">⚡ Performance Issues:</p>
-                                <div className="space-y-1">
-                                  {finding.stack_overflow_performance.map((item: any, itemIndex: number) => (
-                                    <a
-                                      key={itemIndex}
-                                      href={item.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center space-x-1 text-xs text-yellow-600 hover:text-yellow-800"
-                                    >
-                                      <ExternalLink className="w-3 h-3" />
-                                      <span>{item.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Best Practices */}
-                            {finding.stack_overflow_best_practices && finding.stack_overflow_best_practices.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs font-medium text-green-600 mb-1">✅ Best Practices:</p>
-                                <div className="space-y-1">
-                                  {finding.stack_overflow_best_practices.map((item: any, itemIndex: number) => (
-                                    <a
-                                      key={itemIndex}
-                                      href={item.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center space-x-1 text-xs text-green-600 hover:text-green-800"
-                                    >
-                                      <ExternalLink className="w-3 h-3" />
-                                      <span>{item.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
                             
                             {/* Recommendations */}
                             {finding.recommendations.length > 0 && (
@@ -737,83 +652,6 @@ ${qaResults.map(qa => `**Q:** ${qa.question}\n**A:** ${qa.answer}`).join('\n\n')
                             </li>
                           ))}
                         </ul>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enhanced Stack Overflow Insights */}
-                  {stackOverflowResults.stack_overflow_insights && stackOverflowResults.stack_overflow_insights.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="font-semibold text-gray-800 mb-3">Stack Overflow Insights</h4>
-                      <div className="bg-purple-50/80 backdrop-blur-sm rounded-lg p-3 border border-purple-200/50">
-                        <div className="space-y-2">
-                          {stackOverflowResults.stack_overflow_insights.map((insight: any, index: number) => (
-                            <div key={index} className="flex items-start space-x-2">
-                              <BookOpen className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                              <a
-                                href={insight.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-purple-600 hover:text-purple-800 flex-1"
-                              >
-                                {insight.title}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Risk Summaries */}
-                  {(stackOverflowResults.deprecation_warnings || stackOverflowResults.security_issues || stackOverflowResults.performance_issues) && (
-                    <div className="mt-6">
-                      <h4 className="font-semibold text-gray-800 mb-3">Risk Analysis Summary</h4>
-                      <div className="space-y-3">
-                        {/* Deprecation Warnings Summary */}
-                        {stackOverflowResults.deprecation_warnings && stackOverflowResults.deprecation_warnings.length > 0 && (
-                          <div className="bg-orange-50/80 backdrop-blur-sm rounded-lg p-3 border border-orange-200/50">
-                            <h5 className="font-medium text-orange-800 mb-2">⚠️ Deprecation Warnings</h5>
-                            <ul className="space-y-1">
-                              {stackOverflowResults.deprecation_warnings.map((warning: string, index: number) => (
-                                <li key={index} className="text-sm text-orange-700 flex items-start space-x-1">
-                                  <span className="text-orange-500 mt-0.5">•</span>
-                                  <span>{warning}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Security Issues Summary */}
-                        {stackOverflowResults.security_issues && stackOverflowResults.security_issues.length > 0 && (
-                          <div className="bg-red-50/80 backdrop-blur-sm rounded-lg p-3 border border-red-200/50">
-                            <h5 className="font-medium text-red-800 mb-2">🔒 Security Issues</h5>
-                            <ul className="space-y-1">
-                              {stackOverflowResults.security_issues.map((issue: string, index: number) => (
-                                <li key={index} className="text-sm text-red-700 flex items-start space-x-1">
-                                  <span className="text-red-500 mt-0.5">•</span>
-                                  <span>{issue}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Performance Issues Summary */}
-                        {stackOverflowResults.performance_issues && stackOverflowResults.performance_issues.length > 0 && (
-                          <div className="bg-yellow-50/80 backdrop-blur-sm rounded-lg p-3 border border-yellow-200/50">
-                            <h5 className="font-medium text-yellow-800 mb-2">⚡ Performance Issues</h5>
-                            <ul className="space-y-1">
-                              {stackOverflowResults.performance_issues.map((issue: string, index: number) => (
-                                <li key={index} className="text-sm text-yellow-700 flex items-start space-x-1">
-                                  <span className="text-yellow-500 mt-0.5">•</span>
-                                  <span>{issue}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
