@@ -1906,7 +1906,6 @@ async def create_chart_from_excel(request: ChartFromExcelRequest, req: Request):
         import pandas as pd
         import matplotlib.pyplot as plt
         import seaborn as sns
-        import numpy as np
         
         auth = (os.getenv('CONFLUENCE_USER_EMAIL'), os.getenv('CONFLUENCE_API_KEY'))
         response = requests.get(request.excel_url, auth=auth)
@@ -1915,79 +1914,25 @@ async def create_chart_from_excel(request: ChartFromExcelRequest, req: Request):
         
         excel_bytes = response.content
         df = pd.read_excel(BytesIO(excel_bytes))
+
+        plt.figure(figsize=(10, 6))
         
-        # Clean and prepare data
-        df = df.fillna(0)  # Replace NaN with 0
-        
-        # Set up the plot
-        plt.figure(figsize=(12, 8))
-        plt.clf()  # Clear any existing plots
-        
-        try:
-            if request.chart_type == "Grouped Bar":
-                # For grouped bar, use all numeric columns
-                numeric_cols = df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    df[numeric_cols].plot(kind='bar', ax=plt.gca())
-                else:
-                    # If no numeric columns, try to convert first few columns
-                    df.iloc[:, :min(5, len(df.columns))].plot(kind='bar', ax=plt.gca())
-                    
-            elif request.chart_type == "Line":
-                # For line chart, use all numeric columns
-                numeric_cols = df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    df[numeric_cols].plot(kind='line', ax=plt.gca())
-                else:
-                    # If no numeric columns, try to convert first few columns
-                    df.iloc[:, :min(5, len(df.columns))].plot(kind='line', ax=plt.gca())
-                    
-            elif request.chart_type == "Pie":
-                # For pie chart, use the first numeric column or first row
-                numeric_cols = df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    # Use the first numeric column
-                    data = df[numeric_cols[0]]
-                    labels = df.index if len(df) <= 10 else df.index[:10]  # Limit to 10 labels
-                    plt.pie(data, labels=labels, autopct='%1.1f%%')
-                else:
-                    # If no numeric columns, use the first row
-                    if len(df) > 0:
-                        data = df.iloc[0]
-                        labels = df.columns
-                        plt.pie(data, labels=labels, autopct='%1.1f%%')
-                    else:
-                        raise ValueError("No suitable data for pie chart")
-                        
-            elif request.chart_type == "Stacked Bar":
-                # For stacked bar, use all numeric columns
-                numeric_cols = df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    df[numeric_cols].plot(kind='bar', stacked=True, ax=plt.gca())
-                else:
-                    # If no numeric columns, try to convert first few columns
-                    df.iloc[:, :min(5, len(df.columns))].plot(kind='bar', stacked=True, ax=plt.gca())
-            else:
-                # Default to bar chart
-                df.plot(kind='bar', ax=plt.gca())
-                
-        except Exception as chart_error:
-            # Fallback: create a simple bar chart with available data
-            print(f"Chart creation error: {chart_error}")
-            if len(df) > 0 and len(df.columns) > 0:
-                df.iloc[:, :min(3, len(df.columns))].plot(kind='bar', ax=plt.gca())
-            else:
-                raise ValueError("No data available for chart creation")
+        if request.chart_type == "Grouped Bar":
+            df.plot(kind='bar', ax=plt.gca())
+        elif request.chart_type == "Line":
+            df.plot(kind='line', ax=plt.gca())
+        elif request.chart_type == "Pie":
+            df.iloc[0].plot(kind='pie', autopct='%1.1f%%', ax=plt.gca())
+        elif request.chart_type == "Stacked Bar":
+            df.plot(kind='bar', stacked=True, ax=plt.gca())
 
         plt.title(f"{request.chart_type} Chart")
-        plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         
         buf = BytesIO()
-        plt.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+        plt.savefig(buf, format='png')
         buf.seek(0)
         chart_data = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()  # Close the figure to free memory
         
         return {
             "chart_data": chart_data,
@@ -1995,7 +1940,6 @@ async def create_chart_from_excel(request: ChartFromExcelRequest, req: Request):
             "filename": f"{request.filename}.png"
         }
     except Exception as e:
-        print(f"Error in create_chart_from_excel: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/export")
