@@ -1,29 +1,29 @@
 import os
-import io
 import re
-import csv
 import json
-import time
-import traceback
-import warnings
-import requests
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
+import base64
+import hashlib
+import difflib
+import asyncio
+import aiohttp
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Any
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from fpdf import FPDF
-from docx import Document
 from dotenv import load_dotenv
 from atlassian import Confluence
 import google.generativeai as genai
-import sys
-sys.path.append(r"c:/Users/Dhaya Arun/Downloads/finalui-main/finalui-main")
-from test import hybrid_rag
 from bs4 import BeautifulSoup
-from io import BytesIO
-import difflib
-import base64
-import ast
+import requests
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+import io
+import csv
+import docx
+from docx import Document
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -31,7 +31,6 @@ from io import BytesIO
 import base64
 from PIL import Image
 import numpy as np
-from wordcloud import WordCloud
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
